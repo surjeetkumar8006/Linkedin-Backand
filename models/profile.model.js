@@ -38,22 +38,18 @@ const profileSchema = new mongoose.Schema({
   },
   bio: {
     type: String,
-    required: true,
   },
   currentPost: {
     type: String,
-    required: true,
   },
   pastWork: {
     type: [workSchema], 
-    required: true,
   },
   workExperience: {
     type: [workSchema],
   },
   education: {
     type: [educationSchema],
-    required: true,
   },
 });
 
