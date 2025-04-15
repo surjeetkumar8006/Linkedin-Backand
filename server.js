@@ -19,6 +19,8 @@ app.use(cors());
 app.use(methodOverride("_method"));
 app.use(cookieParser());
 
+app.use(express.static("uploads")); 
+
 app.use(session({
   secret: process.env.SESSION_SECRET || "supersecretkey",
   resave: false,
