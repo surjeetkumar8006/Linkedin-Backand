@@ -8,7 +8,6 @@ import fs, { createWriteStream } from "fs";
 
 const userTokens = new Map();
 
-
 const covertUserDataToPDF = async (userProfile) => {
   const doc = new PDFDocument();
   const outputPath = crypto.randomBytes(32).toString("hex") + ".pdf";
@@ -16,11 +15,9 @@ const covertUserDataToPDF = async (userProfile) => {
 
   doc.pipe(stream);
 
-  // Header
   doc.fontSize(18).text("User Profile", { align: "center" });
   doc.moveDown();
 
-  // Profile Picture (if available)
   if (userProfile.userId?.profilePicture) {
     try {
       doc.image("uploads/" + userProfile.userId.profilePicture, 200, 80, {
@@ -34,7 +31,6 @@ const covertUserDataToPDF = async (userProfile) => {
 
   doc.moveDown();
 
-  // Basic Info
   doc.fontSize(12).text(`Name: ${userProfile.userId?.name || "N/A"}`);
   doc.text(`Email: ${userProfile.userId?.email || "N/A"}`);
   doc.text(`Username: ${userProfile.userId?.username || "N/A"}`);
@@ -42,7 +38,6 @@ const covertUserDataToPDF = async (userProfile) => {
   doc.text(`Current Post: ${userProfile.currentPost || "N/A"}`);
 
   doc.moveDown();
-
 
   doc.text("Past Work Experience:");
   (userProfile.pastWork || []).forEach((work) => {
@@ -93,30 +88,23 @@ export const register = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-// Login Controller
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
+      return res.status(400).json({ message: "Email and password are required" });
     }
-
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-
     const token = crypto.randomBytes(32).toString("hex");
-    userTokens.set(user._id.toString(), token); // Store token in memory
-
+    userTokens.set(user._id.toString(), token);
     return res.status(200).json({
       message: "Login successful",
       token,
@@ -132,6 +120,7 @@ export const login = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 export const uploadProfilePicture = async (req, res) => {
   const { token } = req.body;
