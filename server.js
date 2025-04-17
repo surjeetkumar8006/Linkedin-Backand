@@ -10,7 +10,6 @@ import postRoute from "./routes/posts.routes.js";
 import userRoutes from "./routes/users.routes.js";
 
 dotenv.config();
-
 const app = express();
 
 app.use(express.json());  

@@ -1,49 +1,44 @@
-import bcrypt from "bcrypt";
 import User from "../models/user.model.js";
 import Profile from "../models/profile.model.js";
-import Post from "../models/posts.model.js";
-
+import Post from "../models/posts.model.js"; 
 export const activeCheck = async (req, res) => {
   return res.status(200).json({
     message: "Running",
   });
 };
-
 export const createPost = async (req, res) => {
-  const { token } = req.body;
-  console.log("Received token:", token);  // Log the received token
-  
+  const { token, body } = req.body;
   try {
-    const user = await User.findOne({ token: token });
-    console.log("Database token:", user ? user.token : "No user found");  // Log the token stored in the database
+    const user = await User.findOne({ token });
     if (!user) {
-      console.log("User not found");
-      return res.status(404).json({ error: "User not found" });
+      return res.status(401).json({ message: "Invalid token" });
     }
-    
 
-    const mimeType = req.file ? req.file.mimetype : "";
-    let fileType = "";
+    let fileType;
+    const mimeType = req.file?.mimetype || "";
+
     if (mimeType.startsWith("image")) fileType = "image";
     else if (mimeType.startsWith("video")) fileType = "video";
     else if (mimeType.startsWith("audio")) fileType = "audio";
-    else if (mimeType.includes("pdf") || mimeType.includes("doc"))
-      fileType = "document";
+    else if (mimeType.includes("pdf") || mimeType.includes("doc")) fileType = "document";
 
-    const post = new Post({
+    const newPost = new Post({
       userId: user._id,
-      body: req.body.body,
-      media: req.file ? req.file.filename : "",
-      fileType: fileType,
+      body: body || "",
+      media: req.file?.filename || "",
+      ...(fileType && { fileType }), 
     });
-    console.log("Saving post...", post);
-    await post.save();
-    console.log("Post saved!");
 
-    return res.status(201).json({ message: "Post Created Successfully", post });
+    await newPost.save();
+
+    return res.status(201).json({
+      message: "Post created successfully",
+      post: newPost,
+    });
+
   } catch (error) {
-    console.error("Post creation error:", error.message);
-    return res.status(500).json({ error: "Internal Server Error" });
+    console.error("Create Post Error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -55,11 +50,38 @@ export const getAllPost = async (req, res) => {
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
-      message: "All posts fetched successfully",
-      posts: posts,
+      message: "Posts fetched successfully",
+      posts,
     });
   } catch (error) {
-    console.error("Error fetching posts:", error.message);
-    return res.status(500).json({ error: "Internal Server Error" });
+    console.error("Get Posts Error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const deletePost = async (req, res) => {
+  const { token, post_id } = req.body;
+  try {
+    
+
+    if (!token || !post_id) {
+      return res.status(400).json({ message: "Token and post_id are required" });
+    }
+    const user = await User.findOne({ token }).select("_id");
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const post = await Post.findById(post_id);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    if (post.userId.toString() !== user._id.toString()) {
+      return res.status(403).json({ message: "Unauthorized to delete this post" });
+    }
+    await Post.findByIdAndDelete(post_id);
+    return res.status(200).json({ message: "Post deleted successfully" });
+  } catch (error) {
+    console.error("Delete Post Error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
